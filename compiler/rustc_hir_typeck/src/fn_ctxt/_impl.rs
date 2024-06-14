@@ -133,6 +133,7 @@ impl<'a, 'tcx> FnCtxt<'a, 'tcx> {
 
     #[inline]
     pub fn write_ty(&self, id: HirId, ty: Ty<'tcx>) {
+        debug!("!!!!? {:?}", self.infcx.tainted_by_errors());
         debug!("write_ty({:?}, {:?}) in fcx {}", id, self.resolve_vars_if_possible(ty), self.tag());
         let mut typeck = self.typeck_results.borrow_mut();
         let mut node_ty = typeck.node_types_mut();
@@ -152,6 +153,7 @@ impl<'a, 'tcx> FnCtxt<'a, 'tcx> {
         if let Err(e) = ty.error_reported() {
             self.set_tainted_by_errors(e);
         }
+        debug!("!!!!?! {:?}", self.infcx.tainted_by_errors());
     }
 
     pub fn write_field_index(
@@ -785,6 +787,7 @@ impl<'a, 'tcx> FnCtxt<'a, 'tcx> {
                 bug!("`resolve_ty_and_res_fully_qualified_call` called on `LangItem`")
             }
         };
+        debug!("test1");
         if let Some(&cached_result) = self.typeck_results.borrow().type_dependent_defs().get(hir_id)
         {
             self.register_wf_obligation(
@@ -798,6 +801,7 @@ impl<'a, 'tcx> FnCtxt<'a, 'tcx> {
             return (def, Some(ty), slice::from_ref(&**item_segment));
         }
         let item_name = item_segment.ident;
+        debug!("test2");
         let result = self
             .resolve_fully_qualified_call(span, item_name, ty.normalized, qself.span, hir_id)
             .map(|r| {
@@ -858,6 +862,7 @@ impl<'a, 'tcx> FnCtxt<'a, 'tcx> {
                 result
             });
 
+        debug!("test3");
         if result.is_ok() {
             self.register_wf_obligation(
                 ty.raw.into(),
@@ -1054,6 +1059,7 @@ impl<'a, 'tcx> FnCtxt<'a, 'tcx> {
             _ => bug!("instantiate_value_path on {:?}", res),
         };
 
+        debug!("test a");
         let mut user_self_ty = None;
         let mut is_alias_variant_ctor = false;
         match res {
@@ -1097,6 +1103,7 @@ impl<'a, 'tcx> FnCtxt<'a, 'tcx> {
             _ => {}
         }
 
+        debug!("test b");
         // Now that we have categorized what space the parameters for each
         // segment belong to, let's sort out the parameters that the user
         // provided (if any) into their appropriate spaces. We'll also report
@@ -1123,6 +1130,7 @@ impl<'a, 'tcx> FnCtxt<'a, 'tcx> {
             user_self_ty = None;
         }
 
+        debug!("test c");
         // Now we have to compare the types that the user *actually*
         // provided against the types that were *expected*. If the user
         // did not provide any types, then we want to instantiate inference
@@ -1157,6 +1165,7 @@ impl<'a, 'tcx> FnCtxt<'a, 'tcx> {
             }
         }
 
+        debug!("test d");
         let has_self = generic_segments
             .last()
             .is_some_and(|GenericPathSegment(def_id, _)| tcx.generics_of(*def_id).has_self);
@@ -1247,6 +1256,7 @@ impl<'a, 'tcx> FnCtxt<'a, 'tcx> {
         };
         let def_id = res.def_id();
 
+        debug!("test e");
         let (correct, infer_args_for_err) = match infer_args_for_err {
             Some((reported, args)) => {
                 (Err(GenericArgCountMismatch { reported, invalid_args: vec![] }), args)
@@ -1376,6 +1386,7 @@ impl<'a, 'tcx> FnCtxt<'a, 'tcx> {
             }
         }
 
+        debug!("test f");
         let args_raw = self_ctor_args.unwrap_or_else(|| {
             lower_generic_args(
                 tcx,
@@ -1394,12 +1405,14 @@ impl<'a, 'tcx> FnCtxt<'a, 'tcx> {
             )
         });
 
+        debug!("test!!!!5 {:?}", self.infcx.tainted_by_errors());
         // First, store the "user args" for later.
         self.write_user_type_annotation_from_args(hir_id, def_id, args_raw, user_self_ty);
 
         // Normalize only after registering type annotations.
         let args = self.normalize(span, args_raw);
 
+        debug!("test!!!!6 {:?}", self.infcx.tainted_by_errors());
         self.add_required_obligations_for_hir(span, def_id, args, hir_id);
 
         // Instantiate the values for the type parameters into the type of
@@ -1433,9 +1446,11 @@ impl<'a, 'tcx> FnCtxt<'a, 'tcx> {
                 }
             }
         }
+        debug!("test!!!!7 {:?}", self.infcx.tainted_by_errors());
 
         debug!("instantiate_value_path: type of {:?} is {:?}", hir_id, ty_instantiated);
         self.write_args(hir_id, args);
+        debug!("test!!!!8 {:?}", self.infcx.tainted_by_errors());
 
         (ty_instantiated, res)
     }
