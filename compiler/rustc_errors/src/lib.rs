@@ -884,6 +884,16 @@ impl DiagCtxt {
             + inner.stashed_diagnostics.values().filter(|(_diag, guar)| guar.is_some()).count()
     }
 
+    /// This includes delayed bugs.
+    #[inline]
+    pub fn err_count_with_delayed_bugs(&self) -> usize {
+        let inner = self.inner.borrow();
+        inner.err_guars.len()
+            + inner.lint_err_guars.len()
+            + inner.stashed_diagnostics.values().filter(|(_diag, guar)| guar.is_some()).count()
+            + inner.delayed_bugs.len()
+    }
+
     /// This excludes lint errors and delayed bugs. Unless absolutely
     /// necessary, prefer `has_errors` to this method.
     pub fn has_errors_excluding_lint_errors(&self) -> Option<ErrorGuaranteed> {
@@ -1459,9 +1469,11 @@ impl DiagCtxtInner {
                 } else {
                     // If we have already emitted at least one error, we don't need
                     // to record the delayed bug, because it'll never be used.
-                    return if let Some(guar) = self.has_errors() {
-                        Some(guar)
-                    } else {
+                    // return if let Some(guar) = self.has_errors() {
+                    //     self.delayed_bugs.push(guar);
+                    //     Some(guar)
+                    // } else {
+                    return {
                         // No `TRACK_DIAGNOSTIC` call is needed, because the
                         // incremental session is deleted if there is a delayed
                         // bug. This also saves us from cloning the diagnostic.
